@@ -16,20 +16,24 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
+            'phone' => 'nullable|string|max:20',
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'phone' => $request->phone,
+            'role' => 'customer',
+            'is_admin' => false,
+            'status' => 'active',
         ]);
 
-        // Create token for the user
-        $token = $user->createToken('auth-token')->plainTextToken;
+        // For Sanctum, we don't need to create a token manually
+        // Authentication will be handled via cookies
 
         return response()->json([
             'user' => $user,
-            'token' => $token,
             'message' => 'User registered successfully'
         ], 201);
     }
@@ -47,23 +51,94 @@ class AuthController extends Controller
             ]);
         }
 
+        // Check if user is active
+        if (Auth::user()->status !== 'active') {
+            Auth::logout();
+            throw ValidationException::withMessages([
+                'email' => ['Your account has been deactivated.'],
+            ]);
+        }
+
+        // Regenerate session to prevent session fixation attacks
+        if ($request->hasSession()) {
+            $request->session()->regenerate();
+        }
+
         $user = Auth::user();
-        $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([
             'user' => $user,
-            'token' => $token,
             'message' => 'User logged in successfully'
         ]);
     }
 
     public function logout(Request $request)
     {
-        // Revoke the token that was used to authenticate the current request
-        $request->user()->currentAccessToken()->delete();
+        // Logout the user
+        Auth::guard('web')->logout();
+
+        // Invalidate the session
+        if ($request->hasSession()) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
 
         return response()->json([
             'message' => 'User logged out successfully'
+        ]);
+    }
+
+    public function user(Request $request)
+    {
+        $user = $request->user();
+        $user->cart_items_count = $user->getCartItemsCount();
+        $user->wishlist_items_count = $user->getWishlistItemsCount();
+
+        return response()->json($user);
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $request->user()->id,
+            'phone' => 'nullable|string|max:20',
+        ]);
+
+        $user = $request->user();
+        $user->update([
+            'name' => $request->name,
+            'email' => $request->email,
+            'phone' => $request->phone,
+        ]);
+
+        return response()->json([
+            'user' => $user->fresh(),
+            'message' => 'Profile updated successfully'
+        ]);
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = $request->user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['The current password is incorrect.'],
+            ]);
+        }
+
+        $user->update([
+            'password' => Hash::make($request->password),
+        ]);
+
+        return response()->json([
+            'message' => 'Password updated successfully'
         ]);
     }
 }

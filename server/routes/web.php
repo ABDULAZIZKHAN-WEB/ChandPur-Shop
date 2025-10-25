@@ -3,18 +3,11 @@
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    return ['Laravel' => app()->version()];
 });
 
-Route::match(['get', 'options'], '/csrf-token', function () {
-    $response = response()->json(['token' => csrf_token()]);
-    
-    // Add CORS headers
-    $response->header('Access-Control-Allow-Origin', 'http://localhost:5173');
-    $response->header('Access-Control-Allow-Credentials', 'true');
-    $response->header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    $response->header('Access-Control-Allow-Headers', 'Content-Type, X-Requested-With, Accept, Authorization');
-    $response->header('Access-Control-Max-Age', '86400');
-    
-    return $response;
-});
+// Payment callback routes (these need to be web routes, not API routes)
+Route::post('/payment/success', [App\Http\Controllers\PaymentController::class, 'success'])->name('payment.success');
+Route::post('/payment/fail', [App\Http\Controllers\PaymentController::class, 'fail'])->name('payment.fail');
+Route::post('/payment/cancel', [App\Http\Controllers\PaymentController::class, 'cancel'])->name('payment.cancel');
+Route::post('/payment/ipn', [App\Http\Controllers\PaymentController::class, 'ipn'])->name('payment.ipn');
