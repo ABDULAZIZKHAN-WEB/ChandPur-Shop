@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="300" height="200" xmlns="http://www.w3.org/2000/svg">
+  <rect width="300" height="200" fill="#f8f9fa" stroke="#dee2e6" stroke-width="2"/>
+  <text x="150" y="90" font-family="Arial, sans-serif" font-size="16" fill="#6c757d" text-anchor="middle" dominant-baseline="middle">Category</text>
+  <text x="150" y="110" font-family="Arial, sans-serif" font-size="12" fill="#adb5bd" text-anchor="middle" dominant-baseline="middle">Image Placeholder</text>
+  <rect x="130" y="60" width="40" height="30" fill="none" stroke="#6c757d" stroke-width="1" rx="2"/>
+  <circle cx="140" cy="70" r="3" fill="#6c757d"/>
+  <polygon points="135,80 145,75 155,85 135,85" fill="#6c757d"/>
+</svg>

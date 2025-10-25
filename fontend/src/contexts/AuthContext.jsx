@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import api from '../services/api';
+import * as authService from '../services/authService';
 
 const AuthContext = createContext();
 
@@ -22,10 +22,15 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await api.get('/user');
+      const response = await authService.getUser();
       setUser(response.data);
     } catch (error) {
-      // User is not authenticated
+      // User is not authenticated or there was an error
+      // This is expected when not logged in, so we don't log it as an error
+      // Only log actual errors (not 401 which is expected)
+      if (error.response?.status !== 401) {
+        console.error('Auth check failed:', error);
+      }
       setUser(null);
     } finally {
       setLoading(false);
@@ -34,24 +39,29 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await api.post('/login', { email, password });
+      const response = await authService.login({ email, password });
       setUser(response.data.user);
       return { success: true };
     } catch (error) {
+      console.error('Login error:', error);
+      const message = error.response?.data?.message || 
+                     error.response?.data?.errors?.email?.[0] || 
+                     'Login failed';
       return { 
         success: false, 
-        message: error.response?.data?.message || 'Login failed' 
+        message 
       };
     }
   };
 
-  const register = async (name, email, password, password_confirmation) => {
+  const register = async (name, email, password, password_confirmation, phone = '') => {
     try {
-      const response = await api.post('/register', { 
+      const response = await authService.register({ 
         name, 
         email, 
         password, 
-        password_confirmation 
+        password_confirmation,
+        phone
       });
       setUser(response.data.user);
       return { success: true };
@@ -65,13 +75,40 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await api.post('/logout');
+      await authService.logout();
       setUser(null);
       return { success: true };
     } catch (error) {
+      // Even if logout fails on the server, we should clear the user state locally
+      setUser(null);
       return { 
         success: false, 
         message: 'Logout failed' 
+      };
+    }
+  };
+
+  const updateProfile = async (data) => {
+    try {
+      const response = await authService.updateProfile(data);
+      setUser(response.data.user);
+      return { success: true, message: response.data.message };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Profile update failed'
+      };
+    }
+  };
+
+  const updatePassword = async (data) => {
+    try {
+      const response = await authService.updatePassword(data);
+      return { success: true, message: response.data.message };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Password update failed'
       };
     }
   };
@@ -81,6 +118,8 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    updateProfile,
+    updatePassword,
     loading,
     isAuthenticated: !!user,
   };

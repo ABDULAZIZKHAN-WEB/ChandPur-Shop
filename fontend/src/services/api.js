@@ -1,54 +1,128 @@
 import axios from 'axios';
+import API_CONFIG from '../config/apiConfig';
 
 // Create an axios instance with default settings
 const api = axios.create({
-  baseURL: 'http://localhost:8000', // Laravel backend URL
-  withCredentials: true, // Required for authentication cookies
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-    'X-Requested-With': 'XMLHttpRequest',
-  },
+  baseURL: API_CONFIG.BASE_URL,
+  withCredentials: API_CONFIG.AXIOS_CONFIG.withCredentials,
+  headers: API_CONFIG.HEADERS,
 });
+
+// Track CSRF cookie fetch status
+let csrfCookieFetched = false;
+let csrfFetchPromise = null;
+
+// Function to get CSRF token from cookie
+const getCSRFToken = () => {
+  const name = "XSRF-TOKEN=";
+  const decodedCookie = decodeURIComponent(document.cookie);
+  const ca = decodedCookie.split(';');
+  for(let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === ' ') {
+      c = c.substring(1);
+    }
+    if (c.indexOf(name) === 0) {
+      const token = c.substring(name.length, c.length);
+      // Decode the token properly
+      return decodeURIComponent(token);
+    }
+  }
+  return "";
+};
+
+// Function to ensure CSRF cookie is set
+const ensureCSRFCookie = async () => {
+  // If we're already fetching, return the existing promise
+  if (csrfFetchPromise) {
+    return csrfFetchPromise;
+  }
+  
+  // If we've already fetched, just get the token
+  if (csrfCookieFetched) {
+    return getCSRFToken();
+  }
+  
+  console.log('Fetching CSRF cookie...');
+  
+  // Create a new promise for fetching the CSRF cookie
+  csrfFetchPromise = axios.get(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CSRF_COOKIE}`, {
+    withCredentials: true,
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+    }
+  })
+  .then((response) => {
+    console.log('CSRF cookie fetched successfully:', response);
+    csrfCookieFetched = true;
+    const token = getCSRFToken();
+    console.log('CSRF token:', token);
+    return token;
+  })
+  .catch((error) => {
+    console.error('Failed to fetch CSRF cookie:', error);
+    csrfCookieFetched = false;
+    return null;
+  })
+  .finally(() => {
+    csrfFetchPromise = null;
+  });
+  
+  return csrfFetchPromise;
+};
 
 // Add a request interceptor to include CSRF token
 api.interceptors.request.use(
   async (config) => {
-    // Get CSRF token from meta tag or endpoint
-    let token = document.head.querySelector('meta[name="csrf-token"]');
+    console.log('Making API request:', config);
     
-    if (!token) {
-      try {
-        const response = await axios.get('http://localhost:8000/csrf-token', {
-          withCredentials: true
-        });
-        token = response.data.token;
-      } catch (error) {
-        console.error('Failed to fetch CSRF token:', error);
+    // Always ensure CSRF cookie is set for POST, PUT, PATCH, DELETE requests
+    if (['post', 'put', 'patch', 'delete'].includes(config.method?.toLowerCase())) {
+      const csrfToken = await ensureCSRFCookie();
+      if (csrfToken) {
+        config.headers['X-XSRF-TOKEN'] = csrfToken;
+        console.log('Added CSRF token to request headers');
+      } else {
+        console.warn('Failed to get CSRF token');
       }
-    } else {
-      token = token.content;
-    }
-    
-    if (token) {
-      config.headers['X-CSRF-TOKEN'] = token;
     }
     
     return config;
   },
   (error) => {
+    console.error('Request interceptor error:', error);
+    csrfFetchPromise = null;
     return Promise.reject(error);
   }
 );
 
 // Add a response interceptor to handle authentication errors
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('API response received:', response);
+    return response;
+  },
   (error) => {
+    console.error('API response error:', error);
     if (error.response?.status === 401) {
       // Handle unauthorized access
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      // Only redirect if we're not already on the login page
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/login/') {
+        console.log('User not authenticated, redirecting to login');
+        window.location.href = '/login';
+      }
+    } else if (error.response?.status === 419) {
+      // CSRF token mismatch - reset the fetch status and retry
+      console.log('CSRF token mismatch, retrying request');
+      csrfCookieFetched = false;
+      csrfFetchPromise = null;
+      
+      // Retry the request once
+      if (!error.config._retry) {
+        error.config._retry = true;
+        return api.request(error.config);
+      }
     }
     return Promise.reject(error);
   }
