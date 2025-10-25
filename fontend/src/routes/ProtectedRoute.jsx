@@ -6,6 +6,7 @@ import { Spinner, Container } from 'react-bootstrap';
 const ProtectedRoute = () => {
   const { isAuthenticated, loading } = useAuth();
 
+  // Show loading spinner while checking authentication status
   if (loading) {
     return (
       <Container className="py-5">
@@ -18,6 +19,8 @@ const ProtectedRoute = () => {
     );
   }
 
+  // If user is authenticated, render the protected content
+  // If not, redirect to login page
   return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
 };
 

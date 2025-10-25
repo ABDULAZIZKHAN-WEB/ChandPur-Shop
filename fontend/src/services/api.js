@@ -43,8 +43,6 @@ const ensureCSRFCookie = async () => {
     return getCSRFToken();
   }
   
-  console.log('Fetching CSRF cookie...');
-  
   // Create a new promise for fetching the CSRF cookie
   csrfFetchPromise = axios.get(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CSRF_COOKIE}`, {
     withCredentials: true,
@@ -54,14 +52,11 @@ const ensureCSRFCookie = async () => {
     }
   })
   .then((response) => {
-    console.log('CSRF cookie fetched successfully:', response);
     csrfCookieFetched = true;
     const token = getCSRFToken();
-    console.log('CSRF token:', token);
     return token;
   })
   .catch((error) => {
-    console.error('Failed to fetch CSRF cookie:', error);
     csrfCookieFetched = false;
     return null;
   })
@@ -75,23 +70,17 @@ const ensureCSRFCookie = async () => {
 // Add a request interceptor to include CSRF token
 api.interceptors.request.use(
   async (config) => {
-    console.log('Making API request:', config);
-    
     // Always ensure CSRF cookie is set for POST, PUT, PATCH, DELETE requests
     if (['post', 'put', 'patch', 'delete'].includes(config.method?.toLowerCase())) {
       const csrfToken = await ensureCSRFCookie();
       if (csrfToken) {
         config.headers['X-XSRF-TOKEN'] = csrfToken;
-        console.log('Added CSRF token to request headers');
-      } else {
-        console.warn('Failed to get CSRF token');
       }
     }
     
     return config;
   },
   (error) => {
-    console.error('Request interceptor error:', error);
     csrfFetchPromise = null;
     return Promise.reject(error);
   }
@@ -100,21 +89,36 @@ api.interceptors.request.use(
 // Add a response interceptor to handle authentication errors
 api.interceptors.response.use(
   (response) => {
-    console.log('API response received:', response);
     return response;
   },
   (error) => {
-    console.error('API response error:', error);
     if (error.response?.status === 401) {
       // Handle unauthorized access
       // Only redirect if we're not already on the login page
-      if (window.location.pathname !== '/login' && window.location.pathname !== '/login/') {
-        console.log('User not authenticated, redirecting to login');
+      // AND we're trying to access a protected route
+      const protectedRoutes = [
+        '/dashboard',
+        '/cart',
+        '/checkout',
+        '/orders',
+        '/wishlist',
+        '/profile',
+        '/admin'
+      ];
+      
+      const currentPath = window.location.pathname;
+      const isProtectedRoute = protectedRoutes.some(route => 
+        currentPath.startsWith(route)
+      );
+      
+      if (isProtectedRoute && 
+          currentPath !== '/login' && 
+          currentPath !== '/login/') {
         window.location.href = '/login';
       }
+      // For public routes, we just let the error propagate without redirecting
     } else if (error.response?.status === 419) {
       // CSRF token mismatch - reset the fetch status and retry
-      console.log('CSRF token mismatch, retrying request');
       csrfCookieFetched = false;
       csrfFetchPromise = null;
       

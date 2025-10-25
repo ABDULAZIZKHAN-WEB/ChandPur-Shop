@@ -30,7 +30,6 @@ const Home = () => {
       setBanners(bannersResponse.data);
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast.error('Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -39,14 +38,15 @@ const Home = () => {
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ height: '400px' }}>
-        <div className="spinner"></div>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
       </div>
     );
   }
 
   return (
     <>
-     
 
       {/* Hero Section */}
       <section className="hero-section">

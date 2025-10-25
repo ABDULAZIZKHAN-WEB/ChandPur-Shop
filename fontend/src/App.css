@@ -599,3 +599,6 @@ body {
 .shadow-lg {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
 }
+footer .text-muted {
+  color: rgb(215 234 255 / 75%) !important;
+}

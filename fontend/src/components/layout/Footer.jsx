@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Form, Button, InputGroup } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
+import { getPublicSettings } from '../../services/settingService';
+import { getCategories } from '../../services/productService';
 
 const Footer = () => {
   const [settings, setSettings] = useState({
@@ -247,8 +249,10 @@ const Footer = () => {
         <Row className="align-items-center">
           <Col md={6}>
             <p className="text-muted mb-0">
-              &copy; {new Date().getFullYear()} {settings.site_name}.<h4>ABDUL AZIZ KHAN</h4> All rights reserved.
-
+              &copy; {new Date().getFullYear()} {settings.site_name}. All rights reserved.
+            </p>
+            <p className="text-muted mb-0">
+              <strong>ABDUL AZIZ KHAN</strong>
             </p>
           </Col>
           <Col md={6} className="text-md-end">

@@ -124,9 +124,10 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!user,
   };
 
+  // Always render children, even while loading
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };

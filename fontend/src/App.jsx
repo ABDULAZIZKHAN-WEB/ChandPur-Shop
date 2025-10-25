@@ -34,6 +34,19 @@ import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentFail from './pages/PaymentFail';
 import PaymentCancel from './pages/PaymentCancel';
 
+// Information Pages
+import About from './pages/About';
+import Contact from './pages/Contact';
+import FAQ from './pages/FAQ';
+import Help from './pages/Help';
+import Returns from './pages/Returns';
+import Shipping from './pages/Shipping';
+import TrackOrder from './pages/TrackOrder';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
+import Cookies from './pages/Cookies';
+import Sitemap from './pages/Sitemap';
+
 // Admin Pages
 import AdminLayout from './components/admin/layout/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -111,6 +124,95 @@ function App() {
                 
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+
+                {/* Information pages */}
+                <Route path="/about" element={
+                  <>
+                    <Header />
+                    <About />
+                    <Footer />
+                  </>
+                } />
+                
+                <Route path="/contact" element={
+                  <>
+                    <Header />
+                    <Contact />
+                    <Footer />
+                  </>
+                } />
+                
+                <Route path="/faq" element={
+                  <>
+                    <Header />
+                    <FAQ />
+                    <Footer />
+                  </>
+                } />
+                
+                <Route path="/help" element={
+                  <>
+                    <Header />
+                    <Help />
+                    <Footer />
+                  </>
+                } />
+                
+                <Route path="/returns" element={
+                  <>
+                    <Header />
+                    <Returns />
+                    <Footer />
+                  </>
+                } />
+                
+                <Route path="/shipping" element={
+                  <>
+                    <Header />
+                    <Shipping />
+                    <Footer />
+                  </>
+                } />
+                
+                <Route path="/track-order" element={
+                  <>
+                    <Header />
+                    <TrackOrder />
+                    <Footer />
+                  </>
+                } />
+                
+                <Route path="/privacy" element={
+                  <>
+                    <Header />
+                    <Privacy />
+                    <Footer />
+                  </>
+                } />
+                
+                <Route path="/terms" element={
+                  <>
+                    <Header />
+                    <Terms />
+                    <Footer />
+                  </>
+                } />
+                
+                <Route path="/cookies" element={
+                  <>
+                    <Header />
+                    <Cookies />
+                    <Footer />
+                  </>
+                } />
+                
+                <Route path="/sitemap" element={
+                  <>
+                    <Header />
+                    <Sitemap />
+                    <Footer />
+                  </>
+                } />
 
                 {/* Protected user routes */}
                 <Route element={<ProtectedRoute />}>
